@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pausa Activa - Reto de Tareas</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 16px;
+    color: #333;
+  }
+  .container { max-width: 600px; margin: 0 auto; }
+  .card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    margin-bottom: 16px;
+  }
+  h1 { font-size: 26px; text-align: center; margin-bottom: 8px; color: #4c1d95; }
+  h2 { font-size: 20px; margin-bottom: 16px; color: #4c1d95; }
+  p.sub { text-align: center; color: #666; margin-bottom: 24px; font-size: 14px; }
+  label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+  input, textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 16px;
+    font-family: inherit;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+  input:focus, textarea:focus { outline: none; border-color: #7c3aed; }
+  textarea { resize: vertical; min-height: 60px; }
+  button {
+    width: 100%;
+    padding: 14px;
+    background: #7c3aed;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    margin-bottom: 10px;
+  }
+  button:hover { background: #6d28d9; }
+  button:active { transform: scale(0.98); }
+  button:disabled { background: #cbd5e1; cursor: not-allowed; }
+  button.secondary { background: #e5e7eb; color: #4c1d95; }
+  button.secondary:hover { background: #d1d5db; }
+  button.danger { background: #ef4444; }
+  button.danger:hover { background: #dc2626; }
+
+  .codigo-grande {
+    font-size: 42px;
+    font-weight: 800;
+    text-align: center;
+    letter-spacing: 8px;
+    color: #7c3aed;
+    background: #f3f4f6;
+    padding: 20px;
+    border-radius: 12px;
+    margin: 16px 0;
+    user-select: all;
+  }
+
+  .tarea {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    background: #f9fafb;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    transition: all 0.2s;
+    cursor: pointer;
+    user-select: none;
+  }
+  .tarea:hover { border-color: #a78bfa; }
+  .tarea.completada {
+    background: #dcfce7;
+    border-color: #22c55e;
+    text-decoration: line-through;
+    color: #166534;
+  }
+  .tarea.bloqueada { cursor: not-allowed; opacity: 0.7; }
+  .check {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 2px solid #cbd5e1;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 800;
+    color: white;
+    background: white;
+  }
+  .tarea.completada .check { background: #22c55e; border-color: #22c55e; }
+  .tarea-texto { flex: 1; font-size: 15px; }
+
+  .cronometro {
+    text-align: center;
+    font-size: 42px;
+    font-weight: 800;
+    color: #4c1d95;
+    font-variant-numeric: tabular-nums;
+    padding: 20px;
+    background: #f3f4f6;
+    border-radius: 12px;
+    margin: 16px 0;
+  }
+  .cronometro small { display: block; font-size: 12px; color: #666; font-weight: 500; letter-spacing: 2px; margin-bottom: 4px; }
+
+  .ranking-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #f9fafb;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    font-size: 15px;
+  }
+  .ranking-item.oro { background: linear-gradient(90deg, #fef3c7, #fde68a); border: 2px solid #f59e0b; }
+  .ranking-item.plata { background: linear-gradient(90deg, #f1f5f9, #e2e8f0); border: 2px solid #94a3b8; }
+  .ranking-item.bronce { background: linear-gradient(90deg, #fed7aa, #fdba74); border: 2px solid #ea580c; }
+  .ranking-pos { font-weight: 800; font-size: 18px; min-width: 32px; }
+  .ranking-nombre { flex: 1; font-weight: 600; }
+  .ranking-tiempo { font-family: monospace; font-weight: 700; color: #4c1d95; }
+
+  .insignia {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    background: #ede9fe;
+    color: #6d28d9;
+  }
+  .insignia.gris { background: #e5e7eb; color: #666; }
+  .insignia.verde { background: #dcfce7; color: #166534; }
+  .insignia.rojo { background: #fee2e2; color: #991b1b; }
+
+  .jugador-chip {
+    display: inline-block;
+    padding: 6px 12px;
+    background: #ede9fe;
+    color: #6d28d9;
+    border-radius: 20px;
+    font-size: 13px;
+    margin: 3px;
+    font-weight: 600;
+  }
+  .jugador-chip.listo { background: #dcfce7; color: #166534; }
+
+  .fila { display: flex; gap: 8px; }
+  .fila > * { flex: 1; }
+
+  .aviso {
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .aviso.info { background: #dbeafe; color: #1e40af; }
+  .aviso.exito { background: #dcfce7; color: #166534; }
+  .aviso.error { background: #fee2e2; color: #991b1b; }
+
+  .oculto { display: none !important; }
+
+  .tarea-input-fila {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+  }
+  .tarea-input-fila input { margin-bottom: 0; }
+  .btn-x {
+    width: 44px;
+    min-width: 44px;
+    padding: 12px;
+    background: #fee2e2;
+    color: #991b1b;
+    margin: 0;
+  }
+  .btn-x:hover { background: #fecaca; }
+
+  .ganador-anuncio {
+    text-align: center;
+    padding: 24px;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    border-radius: 12px;
+    color: white;
+    margin-bottom: 16px;
+  }
+  .ganador-anuncio h3 { font-size: 24px; margin-bottom: 8px; }
+  .ganador-anuncio .nombre { font-size: 32px; font-weight: 800; }
+
+  hr { border: none; border-top: 1px solid #e5e7eb; margin: 16px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div id="pantallaInicio" class="card">
+    <h1>🏃 Pausa Activa</h1>
+    <p class="sub">Reto de tareas cronometrado</p>
+    <button onclick="mostrarCrearSala()">👑 Crear sala (Administrador)</button>
+    <button class="secondary" onclick="mostrarUnirseSala()">👤 Unirse a una sala</button>
+  </div>
+
+  <div id="pantallaCrear" class="card oculto">
+    <h2>Crear sala</h2>
+    <label>Tu nombre (administrador)</label>
+    <input id="adminNombre" placeholder="Ej: Carlos" maxlength="20">
+    <label>Tareas (máximo 10)</label>
+    <div id="listaTareasInput"></div>
+    <button class="secondary" onclick="agregarTareaInput()" id="btnAgregarTarea">+ Agregar tarea</button>
+    <hr>
+    <button onclick="crearSala()">Crear sala</button>
+    <button class="secondary" onclick="volverInicio()">Volver</button>
+  </div>
+
+  <div id="pantallaUnirse" class="card oculto">
+    <h2>Unirse a una sala</h2>
+    <label>Código de sala</label>
+    <input id="codigoIngresado" placeholder="Ej: A3F9K2" maxlength="6" style="text-transform: uppercase; letter-spacing: 4px; text-align: center; font-size: 22px; font-weight: 700;">
+    <label>Tu nombre</label>
+    <input id="jugadorNombre" placeholder="Ej: Ana" maxlength="20">
+    <button onclick="unirseSala()">Entrar</button>
+    <button class="secondary" onclick="volverInicio()">Volver</button>
+    <div id="errorUnirse" class="aviso error oculto"></div>
+  </div>
+
+  <div id="pantallaAdminLobby" class="card oculto">
+    <h2>Sala creada</h2>
+    <p class="sub">Comparte este código con los participantes:</p>
+    <div class="codigo-grande" id="codigoSala">------</div>
+    <p style="text-align:center; margin-bottom: 16px;"><span class="insignia gris">Esperando jugadores...</span></p>
+    <h2 style="font-size:16px;">Jugadores conectados (<span id="contadorJugadores">0</span>)</h2>
+    <div id="listaJugadoresLobby" style="margin-bottom: 16px; min-height: 30px;"></div>
+    <h2 style="font-size:16px;">Tareas del reto</h2>
+    <ol id="tareasPreviewAdmin" style="margin-left: 20px; margin-bottom: 16px; color: #555;"></ol>
+    <button onclick="iniciarJuego()" id="btnIniciar" disabled>▶️ Comenzar juego</button>
+    <button class="secondary" onclick="salirSala()">Cancelar sala</button>
+  </div>
+
+  <div id="pantallaAdminJuego" class="card oculto">
+    <h2>⏱️ Juego en curso</h2>
+    <div class="cronometro"><small>TIEMPO</small><span id="cronoAdmin">00:00.0</span></div>
+    <h2 style="font-size:16px;">Progreso de jugadores</h2>
+    <div id="progresoAdmin"></div>
+    <hr>
+    <button class="danger" onclick="terminarJuego()">⏹️ Terminar juego</button>
+  </div>
+
+  <div id="pantallaAdminResultados" class="card oculto">
+    <h2>🏆 Resultados finales</h2>
+    <div id="resultadosAdmin"></div>
+    <hr>
+    <button onclick="nuevaRonda()">🔄 Nueva ronda (mismas tareas)</button>
+    <button class="secondary" onclick="salirSala()">Cerrar sala</button>
+  </div>
+
+  <div id="pantallaJugadorLobby" class="card oculto">
+    <h2>¡Estás dentro!</h2>
+    <p class="sub">Esperando a que el administrador inicie el juego...</p>
+    <div style="text-align:center; padding: 30px 0;">
+      <div style="font-size: 60px;">⏳</div>
+    </div>
+    <div class="aviso info">Tu nombre: <strong id="nombreJugadorLobby"></strong></div>
+    <button class="secondary" onclick="salirSala()">Salir</button>
+  </div>
+
+  <div id="pantallaJugadorJuego" class="card oculto">
+    <h2>📋 Completa las tareas</h2>
+    <div class="cronometro"><small>TU TIEMPO</small><span id="cronoJugador">00:00.0</span></div>
+    <div id="tareasJugador"></div>
+  </div>
+
+  <div id="pantallaJugadorTerminado" class="card oculto">
+    <div class="ganador-anuncio">
+      <h3>🎉 ¡Completaste todo!</h3>
+      <div class="nombre" id="tiempoFinalJugador">00:00.0</div>
+      <p style="margin-top: 12px; font-size: 14px;">Espera los resultados finales...</p>
+    </div>
+  </div>
+
+  <div id="pantallaJugadorResultados" class="card oculto">
+    <h2>🏆 Resultados finales</h2>
+    <div id="resultadosJugador"></div>
+  </div>
+
+  <div id="pantallaFinSala" class="card oculto">
+    <h2>Sala cerrada</h2>
+    <p class="sub">El administrador cerró la sala.</p>
+    <button onclick="location.reload()">Volver al inicio</button>
+  </div>
+
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, update, onValue, remove, runTransaction }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAQINYP4Cy6ydEdl9acRrtUGwRQZihuXQQ",
+  authDomain: "pausa-activa-f1ad7.firebaseapp.com",
+  databaseURL: "https://pausa-activa-f1ad7-default-rtdb.firebaseio.com",
+  projectId: "pausa-activa-f1ad7",
+  storageBucket: "pausa-activa-f1ad7.firebasestorage.app",
+  messagingSenderId: "216664675387",
+  appId: "1:216664675387:web:48b150781dc9cb6e81781e"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+let modo = null;
+let codigoSalaActual = null;
+let nombreActual = null;
+let jugadorId = null;
+let unsubscribeSala = null;
+let intervaloCrono = null;
+let tiempoInicioGlobal = 0;
+let totalTareasCache = 0;
+let iniciandoSesion = false;
+
+// ========== UTILIDADES ==========
+function generarCodigo() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let c = "";
+  for (let i = 0; i < 6; i++) c += chars[Math.floor(Math.random() * chars.length)];
+  return c;
+}
+
+function generarIdJugador() {
+  return "j_" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+}
+
+function formatearTiempo(ms) {
+  if (ms < 0) ms = 0;
+  const totalDecimas = Math.floor(ms / 100);
+  const decimas = totalDecimas % 10;
+  const totalSeg = Math.floor(totalDecimas / 10);
+  const seg = totalSeg % 60;
+  const min = Math.floor(totalSeg / 60);
+  return `${String(min).padStart(2,"0")}:${String(seg).padStart(2,"0")}.${decimas}`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function mostrarPantalla(id) {
+  document.querySelectorAll(".card").forEach(el => el.classList.add("oculto"));
+  const el = document.getElementById(id);
+  if (el) el.classList.remove("oculto");
+}
+
+// ========== NAVEGACIÓN ==========
+window.mostrarCrearSala = function() {
+  modo = "admin";
+  mostrarPantalla("pantallaCrear");
+  if (document.getElementById("listaTareasInput").children.length === 0) {
+    for (let i = 0; i < 3; i++) agregarTareaInput();
+  }
+};
+
+window.mostrarUnirseSala = function() {
+  modo = "jugador";
+  mostrarPantalla("pantallaUnirse");
+};
+
+window.volverInicio = function() {
+  mostrarPantalla("pantallaInicio");
+};
+
+// ========== CREAR TAREAS INPUT ==========
+window.agregarTareaInput = function() {
+  const cont = document.getElementById("listaTareasInput");
+  if (cont.children.length >= 10) return;
+  const div = document.createElement("div");
+  div.className = "tarea-input-fila";
+  div.innerHTML = `
+    <input type="text" placeholder="Tarea ${cont.children.length + 1}" maxlength="100">
+    <button class="btn-x" onclick="this.parentElement.remove(); actualizarBotonAgregar();">✕</button>
+  `;
+  cont.appendChild(div);
+  actualizarBotonAgregar();
+};
+
+function actualizarBotonAgregar() {
+  const n = document.getElementById("listaTareasInput").children.length;
+  document.getElementById("btnAgregarTarea").disabled = n >= 10;
+}
+
+// ========== ADMIN: CREAR SALA ==========
+window.crearSala = async function() {
+  const nombre = document.getElementById("adminNombre").value.trim();
+  if (!nombre) { alert("Pon tu nombre"); return; }
+
+  const inputs = document.querySelectorAll("#listaTareasInput input");
+  const tareas = [];
+  inputs.forEach(inp => {
+    const v = inp.value.trim();
+    if (v) tareas.push(v);
+  });
+
+  if (tareas.length === 0) { alert("Agrega al menos 1 tarea"); return; }
+
+  const codigo = generarCodigo();
+  codigoSalaActual = codigo;
+  nombreActual = nombre;
+
+  const salaData = {
+    estado: "esperando",
+    tareas: tareas,
+    tiempoInicio: 0,
+    adminNombre: nombre,
+    creada: Date.now(),
+    jugadores: {}
+  };
+
+  try {
+    await set(ref(db, "salas/" + codigo), salaData);
+    suscribirSala(codigo, "admin");
+    mostrarPantalla("pantallaAdminLobby");
+    document.getElementById("codigoSala").textContent = codigo;
+    document.getElementById("tareasPreviewAdmin").innerHTML =
+      tareas.map(t => `<li>${escapeHtml(t)}</li>`).join("");
+  } catch (e) {
+    alert("Error al crear la sala: " + e.message);
+  }
+};
+
+// ========== JUGADOR: UNIRSE ==========
+window.unirseSala = async function() {
+  if (iniciandoSesion) return;
+  iniciandoSesion = true;
+
+  const codigo = document.getElementById("codigoIngresado").value.trim().toUpperCase();
+  const nombre = document.getElementById("jugadorNombre").value.trim();
+  const err = document.getElementById("errorUnirse");
+
+  if (codigo.length !== 6) {
+    err.textContent = "El código debe tener 6 caracteres";
+    err.classList.remove("oculto");
+    iniciandoSesion = false;
+    return;
+  }
+  if (!nombre) {
+    err.textContent = "Pon tu nombre";
+    err.classList.remove("oculto");
+    iniciandoSesion = false;
+    return;
+  }
+
+  try {
+    const snap = await get(ref(db, "salas/" + codigo));
+    if (!snap.exists()) {
+      err.textContent = "Sala no encontrada";
+      err.classList.remove("oculto");
+      iniciandoSesion = false;
+      return;
+    }
+
+    const data = snap.val();
+    if (data.estado === "terminado") {
+      err.textContent = "Esa sala ya terminó";
+      err.classList.remove("oculto");
+      iniciandoSesion = false;
+      return;
+    }
+
+    // Buscar si ya existe un jugador con el mismo nombre (reconexión)
+    let idExistente = null;
+    if (data.jugadores) {
+      for (const [id, j] of Object.entries(data.jugadores)) {
+        if (j.nombre && j.nombre.toLowerCase() === nombre.toLowerCase()) {
+          idExistente = id;
+          break;
+        }
+      }
+    }
+
+    jugadorId = idExistente || generarIdJugador();
+    nombreActual = nombre;
+    codigoSalaActual = codigo;
+
+    const jugadorRef = ref(db, `salas/${codigo}/jugadores/${jugadorId}`);
+    if (idExistente) {
+      await update(jugadorRef, { conectado: true, ultimaConexion: Date.now() });
+    } else {
+      await set(jugadorRef, {
+        nombre: nombre,
+        completadas: [],
+        tiempoFinal: 0,
+        conectado: true,
+        ultimaConexion: Date.now()
+      });
+    }
+
+    // Guardar para reconexión automática
+    localStorage.setItem("pausaActiva", JSON.stringify({
+      codigo, jugadorId, nombre, modo: "jugador"
+    }));
+
+    suscribirSala(codigo, "jugador");
+  } catch (e) {
+    err.textContent = "Error: " + e.message;
+    err.classList.remove("oculto");
+  }
+  iniciandoSesion = false;
+};
+
+// ========== SUSCRIPCIÓN A LA SALA ==========
+function suscribirSala(codigo, tipo) {
+  if (unsubscribeSala) unsubscribeSala();
+  const salaRef = ref(db, "salas/" + codigo);
+  unsubscribeSala = onValue(salaRef, (snap) => {
+    const data = snap.val();
+    if (!data) {
+      mostrarPantalla("pantallaFinSala");
+      return;
+    }
+    procesarEstadoSala(data, tipo);
+  });
+}
+
+function procesarEstadoSala(data, tipo) {
+  const estado = data.estado;
+  const tareas = data.tareas || [];
+  const jugadores = data.jugadores || {};
+  totalTareasCache = tareas.length;
+
+  if (tipo === "admin") {
+    if (estado === "esperando") {
+      mostrarPantalla("pantallaAdminLobby");
+      document.getElementById("codigoSala").textContent = codigoSalaActual;
+      document.getElementById("tareasPreviewAdmin").innerHTML =
+        tareas.map(t => `<li>${escapeHtml(t)}</li>`).join("");
+
+      const lista = Object.values(jugadores);
+      document.getElementById("contadorJugadores").textContent = lista.length;
+      document.getElementById("listaJugadoresLobby").innerHTML = lista.length
+        ? lista.map(j => `<span class="jugador-chip">${escapeHtml(j.nombre)}</span>`).join("")
+        : '<span style="color:#999;font-size:13px;">Nadie se ha conectado aún</span>';
+
+      document.getElementById("btnIniciar").disabled = lista.length === 0;
+    } else if (estado === "jugando") {
+      mostrarPantalla("pantallaAdminJuego");
+      tiempoInicioGlobal = data.tiempoInicio;
+      arrancarCrono("cronoAdmin");
+      renderProgresoAdmin(jugadores, tareas);
+    } else if (estado === "terminado") {
+      mostrarPantalla("pantallaAdminResultados");
+      detenerCrono();
+      renderResultadosAdmin(jugadores, tareas, data.tiempoInicio);
+    }
+  } else {
+    // JUGADOR
+    if (estado === "esperando") {
+      mostrarPantalla("pantallaJugadorLobby");
+      document.getElementById("nombreJugadorLobby").textContent = nombreActual;
+    } else if (estado === "jugando") {
+      const yo = jugadores[jugadorId];
+      if (!yo) { mostrarPantalla("pantallaFinSala"); return; }
+      if (yo.tiempoFinal > 0) {
+        mostrarPantalla("pantallaJugadorTerminado");
+        document.getElementById("tiempoFinalJugador").textContent =
+          formatearTiempo(yo.tiempoFinal - data.tiempoInicio);
+        return;
+      }
+      mostrarPantalla("pantallaJugadorJuego");
+      tiempoInicioGlobal = data.tiempoInicio;
+      arrancarCrono("cronoJugador");
+      renderTareasJugador(tareas, yo.completadas || []);
+    } else if (estado === "terminado") {
+      mostrarPantalla("pantallaJugadorResultados");
+      detenerCrono();
+      renderResultadosJugador(jugadores, tareas, data.tiempoInicio);
+    }
+  }
+}
+
+// ========== ADMIN: INICIAR JUEGO ==========
+window.iniciarJuego = async function() {
+  const t = Date.now();
+  await update(ref(db, "salas/" + codigoSalaActual), {
+    estado: "jugando",
+    tiempoInicio: t
+  });
+};
+
+// ========== CRONÓMETROS ==========
+function arrancarCrono(idElemento) {
+  detenerCrono();
+  intervaloCrono = setInterval(() => {
+    const ms = Date.now() - tiempoInicioGlobal;
+    const el = document.getElementById(idElemento);
+    if (el) el.textContent = formatearTiempo(ms);
+  }, 100);
+}
+
+function detenerCrono() {
+  if (intervaloCrono) { clearInterval(intervaloCrono); intervaloCrono = null; }
+}
+
+// ========== JUGADOR: TACHAR TAREAS ==========
+function renderTareasJugador(tareas, completadas) {
+  const cont = document.getElementById("tareasJugador");
+  cont.innerHTML = "";
+  tareas.forEach((t, i) => {
+    const hecha = completadas.includes(i);
+    const div = document.createElement("div");
+    div.className = "tarea" + (hecha ? " completada" : "");
+    div.innerHTML = `
+      <div class="check">${hecha ? "✓" : ""}</div>
+      <div class="tarea-texto">${escapeHtml(t)}</div>
+    `;
+    if (!hecha) {
+      div.onclick = () => marcarTarea(i);
+    }
+    cont.appendChild(div);
+  });
+}
+
+window.marcarTarea = async function(idx) {
+  if (modo !== "jugador") return;
+  const jugadorRef = ref(db, `salas/${codigoSalaActual}/jugadores/${jugadorId}`);
+
+  try {
+    await runTransaction(jugadorRef, (jugador) => {
+      if (!jugador) return jugador;
+      if (jugador.tiempoFinal > 0) return jugador;
+      const completadas = jugador.completadas || [];
+      if (completadas.includes(idx)) return jugador;
+
+      completadas.push(idx);
+
+      if (completadas.length >= totalTareasCache) {
+        jugador.tiempoFinal = Date.now();
+      }
+      jugador.completadas = completadas;
+      return jugador;
+    });
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+// ========== ADMIN: PROGRESO ==========
+function renderProgresoAdmin(jugadores, tareas) {
+  const cont = document.getElementById("progresoAdmin");
+  const arr = Object.values(jugadores);
+  if (arr.length === 0) {
+    cont.innerHTML = "<p style='color:#999;'>Sin jugadores</p>";
+    return;
+  }
+
+  arr.sort((a, b) => {
+    if (a.tiempoFinal > 0 && b.tiempoFinal > 0) return a.tiempoFinal - b.tiempoFinal;
+    if (a.tiempoFinal > 0) return -1;
+    if (b.tiempoFinal > 0) return 1;
+    return (b.completadas?.length || 0) - (a.completadas?.length || 0);
+  });
+
+  cont.innerHTML = arr.map(j => {
+    const hechas = j.completadas?.length || 0;
+    const fin = j.tiempoFinal > 0
+      ? `<span class="insignia verde">✓ ${formatearTiempo(j.tiempoFinal - tiempoInicioGlobal)}</span>`
+      : `<span class="insignia gris">${hechas}/${tareas.length}</span>`;
+    return `<div class="ranking-item">
+      <span class="ranking-nombre">${escapeHtml(j.nombre)}</span>
+      ${fin}
+    </div>`;
+  }).join("");
+}
+
+// ========== ADMIN: TERMINAR ==========
+window.terminarJuego = async function() {
+  if (!confirm("¿Terminar el juego y mostrar resultados?")) return;
+  await update(ref(db, "salas/" + codigoSalaActual), { estado: "terminado" });
+};
+
+// ========== RESULTADOS ==========
+function calcularRanking(jugadores, tiempoInicio) {
+  const arr = Object.values(jugadores).map(j => ({
+    nombre: j.nombre,
+    completadas: j.completadas?.length || 0,
+    tiempoFinal: j.tiempoFinal > 0 ? j.tiempoFinal - tiempoInicio : null
+  }));
+
+  const ganadores = arr.filter(j => j.tiempoFinal !== null).sort((a,b) => a.tiempoFinal - b.tiempoFinal);
+  const noTerminaron = arr.filter(j => j.tiempoFinal === null).sort((a,b) => b.completadas - a.completadas);
+
+  return { ganadores, noTerminaron };
+}
+
+function construirResultadosHTML(jugadores, tareas, tiempoInicio) {
+  const { ganadores, noTerminaron } = calcularRanking(jugadores, tiempoInicio);
+  let html = "";
+
+  if (ganadores.length === 0) {
+    html += `<div class="aviso info">Nadie completó todas las tareas 😢</div>`;
+  } else {
+    html += `<h2 style="font-size:16px; margin-top:8px;">🥇 Podio</h2>`;
+    const medallas = ["🥇","🥈","🥉"];
+    const clases = ["oro","plata","bronce"];
+    ganadores.slice(0, 3).forEach((j, i) => {
+      html += `<div class="ranking-item ${clases[i]}">
+        <span class="ranking-pos">${medallas[i]}</span>
+        <span class="ranking-nombre">${escapeHtml(j.nombre)}</span>
+        <span class="ranking-tiempo">${formatearTiempo(j.tiempoFinal)}</span>
+      </div>`;
+    });
+
+    if (ganadores.length > 3) {
+      html += `<h2 style="font-size:14px; margin-top:16px; color:#666;">Otros que terminaron</h2>`;
+      ganadores.slice(3).forEach((j, i) => {
+        html += `<div class="ranking-item">
+          <span class="ranking-pos">${i + 4}</span>
+          <span class="ranking-nombre">${escapeHtml(j.nombre)}</span>
+          <span class="ranking-tiempo">${formatearTiempo(j.tiempoFinal)}</span>
+        </div>`;
+      });
+    }
+  }
+
+  if (noTerminaron.length > 0) {
+    html += `<h2 style="font-size:14px; margin-top:16px; color:#666;">Sin completar</h2>`;
+    noTerminaron.forEach(j => {
+      html += `<div class="ranking-item">
+        <span class="ranking-nombre">${escapeHtml(j.nombre)}</span>
+        <span class="insignia rojo">${j.completadas}/${tareas.length}</span>
+      </div>`;
+    });
+  }
+
+  return html;
+}
+
+function renderResultadosAdmin(jugadores, tareas, tiempoInicio) {
+  document.getElementById("resultadosAdmin").innerHTML =
+    construirResultadosHTML(jugadores, tareas, tiempoInicio);
+}
+
+function renderResultadosJugador(jugadores, tareas, tiempoInicio) {
+  document.getElementById("resultadosJugador").innerHTML =
+    construirResultadosHTML(jugadores, tareas, tiempoInicio);
+}
+
+// ========== NUEVA RONDA ==========
+window.nuevaRonda = async function() {
+  if (!confirm("¿Iniciar nueva ronda con las mismas tareas? Se reiniciarán los tiempos y las tareas marcadas.")) return;
+  const salaRef = ref(db, "salas/" + codigoSalaActual);
+  const snap = await get(salaRef);
+  const data = snap.val();
+  const jugadores = data.jugadores || {};
+
+  const updates = {
+    estado: "esperando",
+    tiempoInicio: 0
+  };
+
+  for (const id of Object.keys(jugadores)) {
+    updates[`jugadores/${id}/completadas`] = [];
+    updates[`jugadores/${id}/tiempoFinal`] = 0;
+  }
+
+  await update(salaRef, updates);
+};
+
+// ========== SALIR ==========
+window.salirSala = async function() {
+  if (modo === "admin" && codigoSalaActual) {
+    if (!confirm("¿Cerrar la sala? Los jugadores serán desconectados.")) return;
+    try {
+      if (unsubscribeSala) unsubscribeSala();
+      await remove(ref(db, "salas/" + codigoSalaActual));
+    } catch (e) { console.error(e); }
+  } else if (modo === "jugador" && codigoSalaActual && jugadorId) {
+    try {
+      if (unsubscribeSala) unsubscribeSala();
+      await update(ref(db, `salas/${codigoSalaActual}/jugadores/${jugadorId}`), { conectado: false });
+    } catch (e) { console.error(e); }
+  }
+  localStorage.removeItem("pausaActiva");
+  location.reload();
+};
+
+// ========== RECONEXIÓN AUTOMÁTICA ==========
+async function intentarReconectar() {
+  const guardado = localStorage.getItem("pausaActiva");
+  if (!guardado) return false;
+  try {
+    const { codigo, jugadorId: jid, nombre, modo: m } = JSON.parse(guardado);
+    if (!codigo || !jid) return false;
+
+    const snap = await get(ref(db, "salas/" + codigo));
+    if (!snap.exists()) { localStorage.removeItem("pausaActiva"); return false; }
+
+    const data = snap.val();
+    if (data.estado === "terminado") { localStorage.removeItem("pausaActiva"); return false; }
+    if (!data.jugadores || !data.jugadores[jid]) { localStorage.removeItem("pausaActiva"); return false; }
+
+    modo = "jugador";
+    codigoSalaActual = codigo;
+    jugadorId = jid;
+    nombreActual = nombre;
+
+    await update(ref(db, `salas/${codigo}/jugadores/${jid}`), {
+      conectado: true,
+      ultimaConexion: Date.now()
+    });
+
+    suscribirSala(codigo, "jugador");
+    return true;
+  } catch (e) {
+    console.error("Reconexión falló:", e);
+    return false;
+  }
+}
+
+// ========== ARRANQUE ==========
+window.addEventListener("load", async () => {
+  const reconectado = await intentarReconectar();
+  if (!reconectado) {
+    mostrarPantalla("pantallaInicio");
+  }
+});
+
+// ========== MANEJO DE DESCONEXIÓN ==========
+window.addEventListener("beforeunload", () => {
+  if (modo === "jugador" && codigoSalaActual && jugadorId) {
+    try {
+      update(ref(db, `salas/${codigoSalaActual}/jugadores/${jugadorId}`), { conectado: false });
+    } catch(e) {}
+  }
+});
+</script>
+</body>
+</html>
+
